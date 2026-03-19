@@ -89,7 +89,18 @@ async function startDownload({ url, format, quality, io }) {
     const audioOut = path.join(UPLOADS_DIR, `${titleSlug}.%(ext)s`);
     flags.output = isWin ? `"${audioOut}"` : audioOut; 
   } else {
-    flags.format = `bestvideo[ext=${format}]+bestaudio[ext=m4a]/best[ext=${format}]/best`;
+    let formatString = `bestvideo[ext=${format}]+bestaudio[ext=m4a]/bestvideo+bestaudio/best`;
+    
+    // Support specific resolution quality if requested by frontend
+    if (quality && quality !== 'best') {
+      const heightMatch = quality.match(/(\d+)/);
+      if (heightMatch) {
+         const height = heightMatch[1];
+         formatString = `bestvideo[height<=${height}][ext=${format}]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`;
+      }
+    }
+    
+    flags.format = formatString;
     flags.mergeOutputFormat = format;
     flags.output = isWin ? `"${outputPath}"` : outputPath;
   }
