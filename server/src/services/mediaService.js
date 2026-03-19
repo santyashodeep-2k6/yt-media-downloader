@@ -10,6 +10,27 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
+const COOKIES_PATH = path.join(UPLOADS_DIR, 'youtube-cookies.txt');
+if (process.env.YOUTUBE_COOKIES) {
+  // If cookies are provided via env var (for Prod/Render), write them to a file
+  fs.writeFileSync(COOKIES_PATH, process.env.YOUTUBE_COOKIES.replace(/\\n/g, '\n'), 'utf8');
+}
+
+function getAuthFlags() {
+  const isWin = process.platform === 'win32';
+  const flags = {
+    extractorArgs: 'youtube:player-client=android'
+  };
+  
+  if (process.env.YOUTUBE_COOKIES) {
+    flags.cookies = isWin ? `"${COOKIES_PATH}"` : COOKIES_PATH;
+  } else if (process.env.BROWSER_COOKIES || isWin) {
+    // Fallback to local browser cookies for testing on Windows
+    flags.cookiesFromBrowser = process.env.BROWSER_COOKIES || 'chrome';
+  }
+  return flags;
+}
+
 const downloads = new Map();
 
 async function analyzeMedia(url) {
@@ -19,7 +40,8 @@ async function analyzeMedia(url) {
       dumpSingleJson: true,
       noCheckCertificates: true,
       noWarnings: true,
-      preferFreeFormats: true
+      preferFreeFormats: true,
+      ...getAuthFlags()
     });
 
     let qualities = [];
@@ -56,7 +78,8 @@ async function startDownload({ url, format, quality, io }) {
   const flags = {
     noCheckCertificates: true,
     noWarnings: true,
-    ffmpegLocation: isWin ? `"${ffmpeg.path}"` : ffmpeg.path
+    ffmpegLocation: isWin ? `"${ffmpeg.path}"` : ffmpeg.path,
+    ...getAuthFlags()
   };
 
   if (format === 'mp3' || format === 'wav') {
