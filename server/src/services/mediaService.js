@@ -89,18 +89,21 @@ async function startDownload({ url, format, quality, io }) {
     const audioOut = path.join(UPLOADS_DIR, `${titleSlug}.%(ext)s`);
     flags.output = isWin ? `"${audioOut}"` : audioOut; 
   } else {
-    let formatString = `bestvideo[ext=${format}]+bestaudio[ext=m4a]/bestvideo+bestaudio/best`;
+    // Rely on formatSort for max resolution to avoid "Requested format is not available"
+    flags.format = 'bestvideo+bestaudio/best';
     
-    // Support specific resolution quality if requested by frontend
+    let formatSort = [];
     if (quality && quality !== 'best') {
       const heightMatch = quality.match(/(\d+)/);
       if (heightMatch) {
-         const height = heightMatch[1];
-         formatString = `bestvideo[height<=${height}][ext=${format}]+bestaudio[ext=m4a]/bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`;
+         formatSort.push(`res:${heightMatch[1]}`);
       }
     }
     
-    flags.format = formatString;
+    // Prefer the requested extension format natively if possible
+    formatSort.push(`ext:${format}:m4a`);
+    flags.formatSort = formatSort.join(',');
+    
     flags.mergeOutputFormat = format;
     flags.output = isWin ? `"${outputPath}"` : outputPath;
   }
