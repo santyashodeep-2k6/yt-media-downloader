@@ -14,7 +14,8 @@ const downloads = new Map();
 
 async function analyzeMedia(url) {
   try {
-    const info = await youtubedl(`"${url}"`, {
+    const isWin = process.platform === 'win32';
+    const info = await youtubedl(isWin ? `"${url}"` : url, {
       dumpSingleJson: true,
       noCheckCertificates: true,
       noWarnings: true,
@@ -51,24 +52,26 @@ async function startDownload({ url, format, quality, io }) {
 
   downloads.set(id, { id, status: 'processing', progress: 0, path: outputPath, filename });
 
+  const isWin = process.platform === 'win32';
   const flags = {
     noCheckCertificates: true,
     noWarnings: true,
-    ffmpegLocation: `"${ffmpeg.path}"`
+    ffmpegLocation: isWin ? `"${ffmpeg.path}"` : ffmpeg.path
   };
 
   if (format === 'mp3' || format === 'wav') {
     flags.extractAudio = true;
     flags.audioFormat = format;
     flags.audioQuality = 0; // best
-    flags.output = `"${path.join(UPLOADS_DIR, `${titleSlug}.%(ext)s`)}"`; 
+    const audioOut = path.join(UPLOADS_DIR, `${titleSlug}.%(ext)s`);
+    flags.output = isWin ? `"${audioOut}"` : audioOut; 
   } else {
     flags.format = `bestvideo[ext=${format}]+bestaudio[ext=m4a]/best[ext=${format}]/best`;
     flags.mergeOutputFormat = format;
-    flags.output = `"${outputPath}"`;
+    flags.output = isWin ? `"${outputPath}"` : outputPath;
   }
 
-  const subprocess = youtubedl.exec(`"${url}"`, flags);
+  const subprocess = youtubedl.exec(isWin ? `"${url}"` : url, flags);
 
   subprocess.stdout.on('data', (data) => {
     const output = data.toString();
