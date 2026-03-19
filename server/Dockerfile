@@ -1,5 +1,4 @@
-# Use Debian-based Node image which natively supports apt-get
-FROM node:20-bullseye-slim
+FROM node:20-bookworm-slim
 
 # Install Python3 (required by yt-dlp to run natively in Linux)
 RUN apt-get update && apt-get install -y python3 \
