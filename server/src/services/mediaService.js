@@ -48,10 +48,20 @@ async function analyzeMedia(url) {
     if (info.formats) {
       qualities = [...new Set(
         info.formats
-          .filter(f => f.resolution && f.resolution !== 'audio only')
+          .filter(f => f.resolution && f.resolution !== 'audio only' && f.ext !== 'mhtml' && !(f.format_note && f.format_note.includes('storyboard')))
           .map(f => f.resolution || f.format_note)
           .filter(Boolean)
       )];
+      
+      const hasValidFormat = info.formats.some(f => 
+        (f.vcodec !== 'none' || f.acodec !== 'none') && 
+        f.ext !== 'mhtml' && 
+        !(f.format_note && f.format_note.includes('storyboard'))
+      );
+
+      if (!hasValidFormat && !info.url) {
+        throw new Error('No downloadable formats found. The requested media may be restricted or blocked by the server.');
+      }
     }
 
     return {
