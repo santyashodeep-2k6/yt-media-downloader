@@ -72,7 +72,11 @@ async function analyzeMedia(url) {
       availableQualities: qualities,
     };
   } catch (error) {
-    throw new Error(error.message || 'Unknown yt-dlp error');
+    const errorMsg = error.message || 'Unknown yt-dlp error';
+    if (errorMsg.includes('Requested format is not available')) {
+       throw new Error('No downloadable formats found. The requested media may be restricted or blocked by YouTube (IP block or age restriction). Please provide cookies or try another video.');
+    }
+    throw new Error(errorMsg);
   }
 }
 
